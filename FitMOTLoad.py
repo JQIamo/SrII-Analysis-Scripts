@@ -14,12 +14,12 @@ import numpy as np
 import h5py
 #import lmfit
 import scipy.constants as cts
-#from analysislib.subroutines import ImageFitter
-#from analysislib.subroutines import SeqFitter
+#from analysislib.Subroutines import ImageFitter
+#from analysislib.Subroutines import SeqFitter
 import imageStackViewer
-#from analysislib.subroutines.alkaliAtom import alkaliAtom
+#from analysislib.Subroutines.alkaliAtom import alkaliAtom
 from labscript_utils.connections import _ensure_str
-from Subroutines.oned_gaussian_fit_sub import oned_gaussian_fit_sub
+from Subroutines.splice_gaussian_fit_sub import splice_gaussian_fit_sub
 from Subroutines.Integrated_gaussian_fit_sub import Integrated_gaussian_fit_sub
 
 # Initial setup for single shot routine:
@@ -72,8 +72,8 @@ with h5py.File(path) as f:
     timeCulled = np.array([])
 
     for image in im_loading_raw:
-        imagefitsx.append(oned_gaussian_fit_sub(image,True)[2])
-        imagefitsz.append(oned_gaussian_fit_sub(image,True)[3])
+        imagefitsx.append(splice_gaussian_fit_sub(image, True)[2])
+        imagefitsz.append(splice_gaussian_fit_sub(image, True)[3])
 
     i = 0
     for i in range(len(imagefitsx)):
