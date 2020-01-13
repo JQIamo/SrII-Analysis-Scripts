@@ -4,56 +4,83 @@ import numpy as np
 import h5py
 import scipy.constants as constants
 from matplotlib.widgets import Cursor
+
 from Subroutines.splice_gaussian_fit_sub import splice_gaussian_fit_sub
 import SrConstants
 import AnalysisSettings
 from Subroutines.FitFunctions import gauss
 
-################################################################################
 
 ser = data(path)
 run = Run(path)
 
 camera = AnalysisSettings.Camera
-sigma0 = 1.015*10**(-7)  # mm^2
-mass = 87.906*1.661*10**(-27)  # kg
+sigma0 = SrConstants.sigma0
+mass = SrConstants.mass
 pixelSize = SrConstants.pixelSizeDict[camera]
+
+
+# Get Data
 
 optical_depth = run.get_result_array('VerySimpleImaging', 'optical_depth')
 TimeOfFlight = ser['TimeOfFlight']
 
+
+# Fit OD
+
 x, imageX, pOptX, z, imageZ, pOptZ = splice_gaussian_fit_sub(optical_depth, False)
 
 
+# Make Figure
+
 fig = plt.figure()
 fig.suptitle(pOptX[0], fontsize=70)
-ax = fig.add_subplot(221)
-axx = fig.add_subplot(223)
-axz = fig.add_subplot(222)
-ax.imshow(optical_depth, vmin=min(pOptX[3], pOptX[0]), vmax=max(pOptX[3], pOptX[0], 0.01))
-axx.plot(x, imageX)
-axx.plot(x, gauss(x, *pOptX))
-axz.plot(z, imageZ)
-axz.plot(z, gauss(z, *pOptZ))
+ax_image = fig.add_subplot(221)
+ax_x = fig.add_subplot(223)
+ax_z = fig.add_subplot(222)
+ax_image.imshow(optical_depth, vmin=min(pOptX[3], pOptX[0]), vmax=max(pOptX[3], pOptX[0], 0.01))
+ax_x.plot(x, imageX)
+ax_x.plot(x, gauss(x, *pOptX))
+ax_z.plot(z, imageZ)
+ax_z.plot(z, gauss(z, *pOptZ))
 
-print(pOptX)
-print(pOptZ)
 
-tempX = mass * (pOptX[2] * pixelSize * 10 ** (-3) / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
-tempZ = mass * (pOptZ[2] * pixelSize * 10 ** (-3) / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
-integral = (pOptX[0] + pOptZ[0]) * 0.5 * np.pi * pOptX[2] * pOptZ[2] * pixelSize ** 2 / sigma0
-run.save_result("peakODx", pOptX[0])
-run.save_result("widthx", pOptX[2])
-run.save_result("tempx", tempX)
-run.save_result("centerx", pOptX[1])
-run.save_result("peakODz", pOptZ[0])
-run.save_result("widthz", pOptZ[2])
-run.save_result("tempz", tempZ)
-run.save_result("centerz", pOptZ[1])
-run.save_result("integral", integral)
-run.save_result("PeakOD", (pOptX[0] + pOptZ[0]) / 2)
+# Calculate Things of Interest
 
-cursor = Cursor(ax, useblit=True, color='white', linewidth=1)
+widthX = pOptX[2] * pixelSize
+widthZ = pOptZ[2] * pixelSize
+
+centerX = pOptX[1] * pixelSize
+centerZ = pOptZ[1] * pixelSize
+
+tempX = mass * (widthX / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
+tempZ = mass * (widthZ / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
+
+atomNumber = (pOptX[0] + pOptZ[0]) * 0.5 * np.pi * widthX * widthZ / sigma0
+avgWidth = (widthX + widthZ)/2
+avgPeakOD = (pOptX[0] + pOptX[2])/2
+avgTemp = (tempX + tempZ)/2
+
+
+# Save Values
+
+run.save_result("peakODX", pOptX[0])
+run.save_result("widthX", widthX)
+run.save_result("tempX", tempX)
+run.save_result("centerX", centerX)
+run.save_result("peakODZ", pOptZ[0])
+run.save_result("widthZ", widthZ)
+run.save_result("tempZ", tempZ)
+run.save_result("centerZ", centerZ)
+run.save_result("atomNumber", atomNumber)
+run.save_result("avgWidth", avgWidth)
+run.save_result("avgPeakOD", avgPeakOD)
+run.save_result("avgTemp", avgTemp)
+
+
+# Set Center event
+
+cursor = Cursor(ax_image, useblit=True, color='white', linewidth=1)
 cursor.set_active(False)
 
 
