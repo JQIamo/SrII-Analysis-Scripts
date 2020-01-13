@@ -6,45 +6,34 @@ import scipy.constants as constants
 import AnalysisSettings
 import SrConstants
 
-################################################################################
-#   Variables
-################################################################################
 
 camera = AnalysisSettings.Camera
 pixelSize = SrConstants.pixelSizeDict[camera]
 
 df = data()
-################################################################################
-peakODx = df["splice_gaussian_fit", "peakODx"]
-peakODz = df["splice_gaussian_fit", "peakODz"]
-widthX = df["splice_gaussian_fit", "widthx"]
-tempX = df["splice_gaussian_fit", "tempx"]
-widthZ = df["splice_gaussian_fit", "widthz"]
-tempZ = df["splice_gaussian_fit", "tempz"]
-width = (widthX + widthZ) / 2
-temp = (tempX + tempZ) / 2
-centerX = df["splice_gaussian_fit", "centerx"]
-centerZ = df["splice_gaussian_fit", "centerz"]
-integral = df["splice_gaussian_fit", "integral"]
 
-################################################################################
-#   Fit Functions
-################################################################################
+# Get Relevant Data
+
+avgPeakOD = df["splice_gaussian_fit", "avgPeakOD"]
+avgTemp = df["splice_gaussian_fit", "avgTemp"]
+atomNumber = df["splice_gaussian_fit", "atomNumber"]
+centerX = df["splice_gaussian_fit", "centerX"]
+centerZ = df["splice_gaussian_fit", "centerZ"]
 
 
-################################################################################
-#   Daily Changes
-################################################################################
+# Set Daily Changes
 
 independent_var_string = AnalysisSettings.POIndependentVar
 misc_dependent_var_string = AnalysisSettings.POMiscDependentVar
 num_points = 7
 fit_function = AnalysisSettings.POFitFunction
-p0 = [14, 100, 10, 0]
+p0 = AnalysisSettings.POFitParameters
 
 independent_var = df[independent_var_string]
 misc_dependent_var = df[misc_dependent_var_string]
-################################################################################
+
+
+# Calculate other possibly useful things
 
 centerDiffX = np.zeros(len(centerX))
 for i in range(int(len(centerX) / 2)):
@@ -56,37 +45,39 @@ for i in range(int(len(centerZ) / 2)):
     centerDiffZ[2 * i] = centerZ[2 * i] - centerZ[2 * i + 1]
     centerDiffZ[2 * i + 1] = centerDiffZ[2 * i]
 
-tempDiff = np.zeros(len(temp))
-for i in range(int(len(temp)/2)):
-    tempDiff[2 * i] = temp[2 * i] - temp[2 * i + 1]
+tempDiff = np.zeros(len(avgTemp))
+for i in range(int(len(avgTemp)/2)):
+    tempDiff[2 * i] = avgTemp[2 * i] - avgTemp[2 * i + 1]
     tempDiff[2 * i + 1] = tempDiff[2 * i]
 
 centerDiff2d = np.sqrt(centerDiffX ** 2 + centerDiffZ ** 2)
 
-################################################################################
-#   Making Figures
-################################################################################
-fig = plt.figure()
-axod = fig.add_subplot(221)
-axwidth = fig.add_subplot(222)
-axn = fig.add_subplot(223)
-axmisc = fig.add_subplot(224)
-axod.plot(independent_var, (peakODx + peakODz)/2, 'bo')
-axn.plot(independent_var, integral, 'bo')
-axwidth.plot(independent_var, temp, 'bo')
-axmisc.plot(independent_var, misc_dependent_var, 'bo')
-axn.title.set_text("number")
-axod.title.set_text("od")
-axwidth.title.set_text("temp")
-axmisc.title.set_text("misc")
-axn.set_xlabel(independent_var_string)
-axod.set_xlabel(independent_var_string)
-axwidth.set_xlabel(independent_var_string)
-axmisc.set_xlabel(independent_var_string)
+# Make the figure
 
-################################################################################
-#   Fitting
-################################################################################
+fig = plt.figure()
+
+axOD = fig.add_subplot(221)
+axTemp = fig.add_subplot(222)
+axN = fig.add_subplot(223)
+axMisc = fig.add_subplot(224)
+
+axOD.plot(independent_var, avgPeakOD, 'bo')
+axN.plot(independent_var, atomNumber, 'bo')
+axTemp.plot(independent_var, avgTemp, 'bo')
+axMisc.plot(independent_var, misc_dependent_var, 'bo')
+
+axN.title.set_text("Number")
+axOD.title.set_text("Od")
+axTemp.title.set_text("Temp")
+axMisc.title.set_text(misc_dependent_var_string)
+
+axN.set_xlabel(independent_var_string)
+axOD.set_xlabel(independent_var_string)
+axTemp.set_xlabel(independent_var_string)
+axMisc.set_xlabel(independent_var_string)
+
+
+# Fit the Misc Data
 
 if len(independent_var) > num_points:
 
@@ -94,9 +85,6 @@ if len(independent_var) > num_points:
     order = np.argsort(independent_var)
     fit = fit_function(independent_var, *coeff)[order]
 
-    axmisc.plot(independent_var[order], fit, 'r-')
+    axMisc.plot(independent_var[order], fit, 'r-')
 
-    print(coeff)
-
-    tempAlt = SrConstants.mass * (coeff[0] * pixelSize * 10 ** (-3)) ** 2 / (2 * constants.value("Boltzmann constant"))
-    print(tempAlt)
+    print("Coeffs: " + coeff)

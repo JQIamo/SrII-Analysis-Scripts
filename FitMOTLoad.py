@@ -20,7 +20,7 @@ import imageStackViewer
 #from analysislib.Subroutines.alkaliAtom import alkaliAtom
 from labscript_utils.connections import _ensure_str
 from Subroutines.splice_gaussian_fit_sub import splice_gaussian_fit_sub
-from Subroutines.Integrated_gaussian_fit_sub import Integrated_gaussian_fit_sub
+from Subroutines.Integrated_gaussian_fit_sub import integrated_gaussian_fit_sub
 
 # Initial setup for single shot routine:
 ser = data(path)
