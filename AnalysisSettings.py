@@ -8,7 +8,12 @@ Isotope = 88
 # Single-Script variables
 
 # ParameterOptimization:
-POIndependentVar = 'run number'
-POMiscDependentVar = ("Integrated_gaussian_fit", "peakODz")
-POFitFunction = Functions.gaussian_1d
-POFitParameters = [2, 100, 10, 0]
+POIndependentVar = 'TimeOfFlight'
+POMiscDependentVar1 = ("splice_gaussian_fit", "widthX")
+POMiscDependentVar2 = ("splice_gaussian_fit", "widthZ")
+POFitFunction = Functions.temp_fit
+POFitParameters = [50,0.004]
+
+#FIIMOTLoad settings:
+FMLMaxCull = 30000000
+FMLMinCull = 2000000

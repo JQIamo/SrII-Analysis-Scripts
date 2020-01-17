@@ -24,13 +24,15 @@ centerZ = df["splice_gaussian_fit", "centerZ"]
 # Set Daily Changes
 
 independent_var_string = AnalysisSettings.POIndependentVar
-misc_dependent_var_string = AnalysisSettings.POMiscDependentVar
-num_points = 7
+misc_dependent_var_string1 = AnalysisSettings.POMiscDependentVar1
+misc_dependent_var_string2 = AnalysisSettings.POMiscDependentVar2
+num_points = 10
 fit_function = AnalysisSettings.POFitFunction
 p0 = AnalysisSettings.POFitParameters
 
 independent_var = df[independent_var_string]
-misc_dependent_var = df[misc_dependent_var_string]
+misc_dependent_var1 = df[misc_dependent_var_string1]
+misc_dependent_var2 = df[misc_dependent_var_string2]
 
 
 # Calculate other possibly useful things
@@ -64,12 +66,13 @@ axMisc = fig.add_subplot(224)
 axOD.plot(independent_var, avgPeakOD, 'bo')
 axN.plot(independent_var, atomNumber, 'bo')
 axTemp.plot(independent_var, avgTemp, 'bo')
-axMisc.plot(independent_var, misc_dependent_var, 'bo')
+axMisc.plot(independent_var, misc_dependent_var1, 'bo')
+axMisc.plot(independent_var, misc_dependent_var2, 'go')
 
 axN.title.set_text("Number")
-axOD.title.set_text("Od")
+axOD.title.set_text("OD")
 axTemp.title.set_text("Temp")
-axMisc.title.set_text(misc_dependent_var_string)
+axMisc.title.set_text("WidthX/WidthZ")
 
 axN.set_xlabel(independent_var_string)
 axOD.set_xlabel(independent_var_string)
@@ -81,10 +84,15 @@ axMisc.set_xlabel(independent_var_string)
 
 if len(independent_var) > num_points:
 
-    coeff, var_matrix = curve_fit(fit_function, independent_var, misc_dependent_var, p0=p0)
+    coeff1, var_matrix1 = curve_fit(fit_function, independent_var, misc_dependent_var1, p0=p0)
+    coeff2, var_matrix2 = curve_fit(fit_function, independent_var, misc_dependent_var2, p0=p0)
     order = np.argsort(independent_var)
-    fit = fit_function(independent_var, *coeff)[order]
+    fit1 = fit_function(independent_var, *coeff1)[order]
+    fit2 = fit_function(independent_var, *coeff2)[order]
 
-    axMisc.plot(independent_var[order], fit, 'r-')
+    axMisc.plot(independent_var[order], fit1, 'r-')
+    axMisc.plot(independent_var[order], fit2, 'r-')
 
-    print("Coeffs: " + coeff)
+    print("Coeffs X: " + str(coeff1))
+    print("Coeffs Z: " + str(coeff2))
+    print(str(var_matrix1))

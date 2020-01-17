@@ -21,6 +21,7 @@ import imageStackViewer
 from labscript_utils.connections import _ensure_str
 from Subroutines.splice_gaussian_fit_sub import splice_gaussian_fit_sub
 from Subroutines.Integrated_gaussian_fit_sub import integrated_gaussian_fit_sub
+import AnalysisSettings
 
 # Initial setup for single shot routine:
 ser = data(path)
@@ -68,6 +69,7 @@ with h5py.File(path) as f:
     imagefitsz = []
     atomNumbers = np.array([])
     time = np.array([])
+    badShots = [0,]
     atomNumbersCulled = np.array([])
     timeCulled = np.array([])
 
@@ -78,7 +80,7 @@ with h5py.File(path) as f:
     i = 0
     for i in range(len(imagefitsx)):
         atomNumber = (imagefitsx[i][0]+imagefitsz[i][0])*0.5*np.pi*((imagefitsx[i][2]+imagefitsz[i][2])/2)**2#*pixelsize**2/sigma0
-        if atomNumber > 20000:
+        if atomNumber > AnalysisSettings.FMLMinCull and atomNumber < AnalysisSettings.FMLMaxCull and i not in badShots:
             timeCulled = np.append(timeCulled,i*ser['TimeBetweenExp'])
             atomNumbersCulled = np.append(atomNumbersCulled,atomNumber)
         time = np.append(time,i*ser['TimeBetweenExp'])
@@ -88,16 +90,21 @@ with h5py.File(path) as f:
         rate, tau = p
         return rate*tau*(1-np.exp(-t/tau))
 
-    coeff, var_matrix = curve_fit(load_fit_func, timeCulled, atomNumbersCulled, [50000,.1])
-    atomNumbersNorm = atomNumbers*ser["1d_gaussian_fit","integral"]/(coeff[0]*coeff[1])
-    coeff[0] = ser["1d_gaussian_fit","integral"]/coeff[1]
+    coeff, var_matrix = curve_fit(load_fit_func, timeCulled, atomNumbersCulled, [1e7,.5])
+    Norm = ser["splice_gaussian_fit","atomNumber"]/(coeff[0]*coeff[1])
+    atomNumbersNorm = atomNumbers*Norm
+    atomNumbersCulledNorm = atomNumbersCulled*Norm
+    coeff[0] = coeff[0]*Norm
     fit = load_fit_func(time, *coeff)
 
     atomNfig = plt.figure()
     atomNax = atomNfig.add_subplot(111)
-    atomNax.plot(time,atomNumbersNorm,'bo')
-    atomNax.plot(time, fit, 'r-')
+    atomNax.plot(timeCulled,atomNumbersCulled,'bo')
+    atomNax.plot(time, fit /Norm , 'r-')
 
+    run.save_result("loadingTimeConstant", coeff[1])
+    run.save_result("loadingRate", coeff[0])
+    run.save_result("fluorNorm", Norm)
     ############################################################################
 
     # Get the properties of all the movies:

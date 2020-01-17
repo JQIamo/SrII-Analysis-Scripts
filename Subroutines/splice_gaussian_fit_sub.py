@@ -55,8 +55,8 @@ def splice_gaussian_fit_sub(image, fix_center):
             image_z = image[:, int(x_slice_point)]
             initial_guess_x = p_opt_x
     except RuntimeError:
-        p_opt_x = (0, 0, 0, 0)
-        p_opt_z = (0, 0, 0, 0)
+        p_opt_x = (-.001, 0, 1, 0)
+        p_opt_z = (-.001, 0, 1, 0)
         pass
 
     # Save New Center
@@ -66,8 +66,8 @@ def splice_gaussian_fit_sub(image, fix_center):
 
     # Fit Found Something Artificial
     if p_opt_x[2] < 20 or p_opt_z[2] < 20:
-        p_opt_x = (0, 0, 1, 0)
-        p_opt_z = (0, 0, 1, 0)
+        p_opt_x = (-.001, 0, 1, 0)
+        p_opt_z = (-.001, 0, 1, 0)
 
     # Return Everything
-    return[x, image_x, p_opt_x, z, image_z, p_opt_z]
+    return[x, image_x, p_opt_x, p_cov_x, z, image_z, p_opt_z, p_conv_z]

@@ -87,7 +87,7 @@ def set_center(event):
         cursor.set_active(False)
         center = (int(event.xdata), int(event.ydata))
         print(center)
-        with h5py.File('G:\\My Drive\\SrII\\Labscript\\AnalysisScripts\\current_roi.h5', 'w') as f:
+        with h5py.File('current_roi.h5', 'w') as f:
             if 'center' not in f:
                 f.attrs.create('center', center)
             else:

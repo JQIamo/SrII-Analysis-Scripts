@@ -18,6 +18,7 @@ camera = AnalysisSettings.Camera
 sigma0 = SrConstants.sigma0
 mass = SrConstants.mass
 pixelSize = SrConstants.pixelSizeDict[camera]
+print(pixelSize)
 
 
 # Get Data
@@ -28,8 +29,9 @@ TimeOfFlight = ser['TimeOfFlight']
 
 # Fit OD
 
-x, imageX, pOptX, z, imageZ, pOptZ = splice_gaussian_fit_sub(optical_depth, False)
-
+x, imageX, pOptX, pCovX, z, imageZ, pOptZ, pCovZ = splice_gaussian_fit_sub(optical_depth, False)
+pStdDevX = np.sqrt(np.diag(pCovX))
+pStdDevZ = np.sqrt(np.diag(pCovX))
 
 # Make Figure
 
@@ -44,22 +46,35 @@ ax_x.plot(x, gauss(x, *pOptX))
 ax_z.plot(z, imageZ)
 ax_z.plot(z, gauss(z, *pOptZ))
 
-
 # Calculate Things of Interest
 
 widthX = pOptX[2] * pixelSize
 widthZ = pOptZ[2] * pixelSize
+widthXDev = pStdDevX[2] * pixelSize
+widthZDev = pStdDevZ[2] * pixelSize
 
 centerX = pOptX[1] * pixelSize
 centerZ = pOptZ[1] * pixelSize
+centerXDev = pStdDevX[1] * pixelSize
+centerXDev = pStdDevZ[1] * pixelSize
 
 tempX = mass * (widthX / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
 tempZ = mass * (widthZ / TimeOfFlight) ** 2 / (2 * constants.value("Boltzmann constant"))
+tempXDev = mass * 2 * (widthX / (TimeOfFlight** 2)) * widthXDev / (2 * constants.value("Boltzmann constant"))
+tempZDev = mass * 2 * (widthZ / (TimeOfFlight** 2)) * widthZDev / (2 * constants.value("Boltzmann constant"))
 
-atomNumber = (pOptX[0] + pOptZ[0]) * 0.5 * np.pi * widthX * widthZ / sigma0
+atomNumber = (pOptX[0] + pOptZ[0]) * np.pi * widthX * widthZ / sigma0
+atomNumberDev =   np.sqrt((pStdDevX[0]* np.pi * widthX * widthZ / sigma0)**2
+                + (pStdDevZ[0] * np.pi * widthX * widthZ / sigma0)**2
+                + ((pOptX[0] + pOptZ[0]) * np.pi * widthXDev * widthZ / sigma0)**2
+                + ((pOptX[0] + pOptZ[0]) * np.pi * widthX * widthZDev / sigma0)**2)
+
 avgWidth = (widthX + widthZ)/2
-avgPeakOD = (pOptX[0] + pOptX[2])/2
+avgWidthDev = np.sqrt((widthXDev/2)**2 + (widthZDev/2)**2)
+avgPeakOD = (pOptX[0] + pOptZ[0])/2
+avgPeakODDev = np.sqrt((pStdDevX[0]/2)**2 + (pStdDevZ[0]/2)**2)
 avgTemp = (tempX + tempZ)/2
+avgTempDev = np.sqrt((tempXDev/2)**2 + (tempZDev/2)**2)
 
 
 # Save Values
@@ -77,6 +92,20 @@ run.save_result("avgWidth", avgWidth)
 run.save_result("avgPeakOD", avgPeakOD)
 run.save_result("avgTemp", avgTemp)
 
+run.save_result("peakODXDev", pStdDevX[0])
+run.save_result("widthXDev", widthXDev)
+run.save_result("tempXDev", tempXDev)
+run.save_result("centerXDev", centerXDev)
+run.save_result("peakODZDev", pStdDevZ[0])
+run.save_result("widthZDev", widthZDev)
+run.save_result("tempZDev", tempZDev)
+run.save_result("centerZDev", centerZDev)
+run.save_result("atomNumberDev", atomNumberDev)
+run.save_result("avgWidthDev", avgWidthDev)
+run.save_result("avgPeakODDev", avgPeakODDev)
+run.save_result("avgTempDev", avgTempDev)
+
+print("atomNumber" + str(atomNumber))
 
 # Set Center event
 
@@ -91,7 +120,7 @@ def set_center(event):
         cursor.set_active(False)
         center = (int(event.xdata), int(event.ydata))
         print(center)
-        with h5py.File('G:\\My Drive\\SrII\\Labscript\\AnalysisScripts\\current_roi.h5', 'w') as f:
+        with h5py.File('C:\\labscript_suite\\userlib\\analysislib\\SrII-Analysis-Scripts\\current_roi.h5', 'w') as f:
             if 'center' not in f:
                 f.attrs.create('center', center)
             else:
